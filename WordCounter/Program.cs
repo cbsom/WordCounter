@@ -10,8 +10,8 @@ namespace WordCounter
 {
     class Program
     {
-        private static readonly Encoding _hebrewEncoding = Encoding.GetEncoding(1255);
-       
+        private static Encoding _encoding = Encoding.GetEncoding(1255);
+
         static void Main(string[] args)
         {
             if (args.Length < 2)
@@ -22,27 +22,55 @@ namespace WordCounter
             {
                 try
                 {
-                    getTable(args[0], args[1]);
+                    DetectFileEncoding(args[0]);
+                    Console.WriteLine("Encoding detected: {0}", _encoding.BodyName);
+                    GetFrequencyTable(args[0], args[1]);
                     Console.WriteLine("Completed creating file {0}", args[1]);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    Console.Error.WriteLine("Failed to create {0} from {1}\n{2}\n{3}", 
+                    Console.Error.WriteLine("Failed to create {0} from {1}\n{2}\n{3}",
                         args[1], args[0], ex.Message, ex.StackTrace);
                 }
-                
+
             }
             Console.WriteLine("Press <ENTER> to exit...");
             Console.ReadLine();
         }
 
-        static void getTable(string wordListPath, string outputPath)
+        static void DetectFileEncoding(string filePath)
+        {
+            var Utf8EncodingVerifier = Encoding.GetEncoding("utf-8", new EncoderExceptionFallback(), new DecoderExceptionFallback());
+            Stream fs = File.OpenRead(filePath);
+            using (var reader = new StreamReader(fs, Utf8EncodingVerifier,
+                   detectEncodingFromByteOrderMarks: true, leaveOpen: true, bufferSize: 1024))
+            {
+                try
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        var line = reader.ReadLine();
+                    }
+                    _encoding = reader.CurrentEncoding;
+                }
+                catch
+                {
+                    return;
+                }
+                finally
+                {
+                    fs.Close();
+                }
+            }
+        }
+
+        static void GetFrequencyTable(string wordListPath, string outputPath)
         {
             var dict = new Dictionary<string, long>();
-            foreach (string line in File.ReadLines(wordListPath, _hebrewEncoding))
+            foreach (string line in File.ReadLines(wordListPath, _encoding))
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                foreach (string word in line.Split(new char[] { ' ' }, 
+                foreach (string word in line.Split(new char[] { ' ' },
                     StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (!string.IsNullOrWhiteSpace(word))
@@ -68,7 +96,7 @@ namespace WordCounter
             }
             using (var file = File.OpenWrite(outputPath))
             {
-                using (var sw = new StreamWriter(file, _hebrewEncoding))
+                using (var sw = new StreamWriter(file, _encoding))
                 {
                     sw.WriteLine("word,instances");
                     foreach (var kvp in list)
