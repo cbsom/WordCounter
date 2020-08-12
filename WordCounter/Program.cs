@@ -24,8 +24,16 @@ namespace WordCounter
                 {
                     DetectFileEncoding(args[0]);
                     Console.WriteLine("Encoding detected: {0}", _encoding.BodyName);
-                    GetFrequencyTable(args[0], args[1]);
-                    Console.WriteLine("Completed creating file {0}", args[1]);
+                    var list = GetFrequencyTable(args[0]);
+                    if (list.Count > 0)
+                    {
+                        OutputCsv(args[1], list);
+                        Console.WriteLine("Completed creating file {0}", args[1]);
+                    }
+                    else
+                    {
+                        Console.WriteLine("There was an issue getting word frequency count - list is empty");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -40,7 +48,8 @@ namespace WordCounter
 
         static void DetectFileEncoding(string filePath)
         {
-            var Utf8EncodingVerifier = Encoding.GetEncoding("utf-8", new EncoderExceptionFallback(), new DecoderExceptionFallback());
+            var Utf8EncodingVerifier = Encoding.GetEncoding("utf-8",
+                new EncoderExceptionFallback(), new DecoderExceptionFallback());
             Stream fs = File.OpenRead(filePath);
             using (var reader = new StreamReader(fs, Utf8EncodingVerifier,
                    detectEncodingFromByteOrderMarks: true, leaveOpen: true, bufferSize: 1024))
@@ -64,7 +73,7 @@ namespace WordCounter
             }
         }
 
-        static void GetFrequencyTable(string wordListPath, string outputPath)
+        static List<KeyValuePair<string, long>> GetFrequencyTable(string wordListPath)
         {
             var dict = new Dictionary<string, long>();
             foreach (string line in File.ReadLines(wordListPath, _encoding))
@@ -90,6 +99,11 @@ namespace WordCounter
 
             var list = dict.ToList();
             list.Sort((kvp1, kvp2) => kvp2.Value.CompareTo(kvp1.Value));
+            return list;
+        }
+
+        private static void OutputCsv(string outputPath, List<KeyValuePair<string, long>> list)
+        {
             if (File.Exists(outputPath))
             {
                 File.Delete(outputPath);
