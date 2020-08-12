@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace WordCounter
 {
@@ -112,10 +110,10 @@ namespace WordCounter
             {
                 using (var sw = new StreamWriter(file, _encoding))
                 {
-                    sw.WriteLine("word,instances");
+                    sw.WriteLine("\"Word\",\"Instances\"");
                     foreach (var kvp in list)
                     {
-                        sw.WriteLine(kvp.Key + "," + kvp.Value.ToString());
+                        sw.WriteLine($"\"{kvp.Key}\",\"{kvp.Value}\"");
                     }
                 }
             }
